@@ -8,6 +8,14 @@
       font-family: sans-serif;
       background: #f0f0f0;
       padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
     }
     input, button {
       margin: 10px 0;
@@ -32,18 +40,26 @@
 </head>
 <body>
 
-  <h2>Redimensionneur d’image</h2>
+  <div class="top-bar">
+    <div>
+      <h2>Redimensionneur d’image</h2>
 
-  <label>Choisis une image :</label><br>
-  <input type="file" id="imageFile" accept="image/*"><br>
+      <label>Choisis une image :</label><br>
+      <input type="file" id="imageFile" accept="image/*"><br>
 
-  <label>Facteur de multiplication :</label><br>
-  <input type="number" id="multiplier" value="10" min="1"><br>
+      <label>Facteur de multiplication :</label><br>
+      <input type="number" id="multiplier" value="10" min="1"><br>
 
-  <button onclick="redimensionner()">Redimensionner</button><br>
-  <a id="downloadLink" href="#" download="image_redimensionnee.png" style="display:none;">
-    <button>Télécharger</button>
-  </a>
+      <button onclick="redimensionner()">Redimensionner</button><br>
+      <a id="downloadLink" href="#" download="image_redimensionnee.png" style="display:none;">
+        <button>Télécharger</button>
+      </a>
+    </div>
+
+    <div>
+      <button onclick="genererImageBruit()">🌀 Générer bruit 16MP</button>
+    </div>
+  </div>
 
   <div class="preview-container">
     <div class="preview-box">
@@ -94,15 +110,13 @@
           ctx.imageSmoothingEnabled = false;
           ctx.drawImage(img, 0, 0, newWidth, newHeight);
 
-          // Mettre à jour le lien de téléchargement
           canvas.toBlob(blob => {
-            if (downloadURL) URL.revokeObjectURL(downloadURL); // nettoyer ancien blob
+            if (downloadURL) URL.revokeObjectURL(downloadURL);
             downloadURL = URL.createObjectURL(blob);
             downloadLink.href = downloadURL;
             downloadLink.style.display = "inline-block";
           }, "image/png");
 
-          // Afficher les aperçus
           const previewCanvas = document.createElement("canvas");
           const scale = Math.min(300 / newWidth, 300 / newHeight, 1);
           previewCanvas.width = newWidth * scale;
@@ -122,6 +136,33 @@
       };
 
       reader.readAsDataURL(file);
+    }
+
+    function genererImageBruit() {
+      const size = 4096; // 4096 x 4096 = 16,777,216 pixels = 16MP
+      const canvas = document.createElement("canvas");
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext("2d");
+      const imageData = ctx.createImageData(size, size);
+      const data = imageData.data;
+
+      for (let i = 0; i < data.length; i += 4) {
+        const v = Math.random() * 255;
+        data[i] = data[i + 1] = data[i + 2] = v; // grayscale noise
+        data[i + 3] = 255;
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "bruit_16mp.png";
+        a.click();
+        URL.revokeObjectURL(url);
+      }, "image/png");
     }
   </script>
 
