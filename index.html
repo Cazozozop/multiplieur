@@ -12,10 +12,26 @@
     input[type="number"] {
       width: 60px;
     }
+    .preview-container {
+      display: flex;
+      gap: 40px;
+      margin-top: 20px;
+      align-items: flex-start;
+    }
+    .preview-box {
+      text-align: center;
+    }
     img {
       display: block;
-      margin-top: 20px;
+      margin: 10px auto;
       image-rendering: pixelated;
+      border: 1px solid #ccc;
+      background: white;
+    }
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      cursor: pointer;
     }
   </style>
 </head>
@@ -29,13 +45,26 @@
 
   <button onclick="appliquerMultiplication()">Appliquer</button>
 
-  <div id="resultat">
-    <img id="preview" src="" alt="Aperçu de l'image" style="display:none;">
+  <div class="preview-container" id="resultat">
+    <div class="preview-box">
+      <strong>Avant</strong>
+      <img id="previewOriginal" src="" alt="Image originale" style="display:none;">
+    </div>
+    <div class="preview-box">
+      <strong>Après</strong>
+      <img id="previewResized" src="" alt="Image redimensionnée" style="display:none;">
+      <a id="downloadLink" download="image_redimensionnee.png" style="display:none;">
+        <button>Télécharger</button>
+      </a>
+    </div>
   </div>
 
   <script>
     const input = document.getElementById('imageInput');
-    const preview = document.getElementById('preview');
+    const originalImg = document.getElementById('previewOriginal');
+    const resizedImg = document.getElementById('previewResized');
+    const downloadLink = document.getElementById('downloadLink');
+    let originalDataURL = '';
     let originalWidth = 0;
     let originalHeight = 0;
 
@@ -45,27 +74,43 @@
 
       const reader = new FileReader();
       reader.onload = function(event) {
-        preview.src = event.target.result;
-        preview.style.display = 'block';
+        originalDataURL = event.target.result;
+        originalImg.src = originalDataURL;
+        originalImg.style.display = 'block';
 
-        // Charger temporairement pour obtenir les dimensions originales
         const tempImg = new Image();
         tempImg.onload = function() {
           originalWidth = tempImg.width;
           originalHeight = tempImg.height;
-          appliquerMultiplication(); // Appliquer par défaut à l’ouverture
+          appliquerMultiplication();
         };
-        tempImg.src = event.target.result;
+        tempImg.src = originalDataURL;
       };
       reader.readAsDataURL(file);
     });
 
     function appliquerMultiplication() {
       const facteur = parseFloat(document.getElementById('multiplier').value);
-      if (originalWidth && originalHeight && facteur > 0) {
-        preview.width = originalWidth * facteur;
-        preview.height = originalHeight * facteur;
-      }
+      if (!originalDataURL || facteur <= 0) return;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = originalWidth * facteur;
+      canvas.height = originalHeight * facteur;
+
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.onload = function() {
+        ctx.imageSmoothingEnabled = false; // Garder les pixels nets
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const resizedDataURL = canvas.toDataURL('image/png');
+
+        resizedImg.src = resizedDataURL;
+        resizedImg.style.display = 'block';
+
+        downloadLink.href = resizedDataURL;
+        downloadLink.style.display = 'inline-block';
+      };
+      img.src = originalDataURL;
     }
   </script>
 </body>
