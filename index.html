@@ -2,21 +2,21 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Redimensionneur d’image avec aperçu réduit</title>
+  <title>Redimensionneur d’image (import local)</title>
   <style>
     body {
       font-family: sans-serif;
-      background: #f0f0f0;
+      background: #f9f9f9;
       padding: 20px;
     }
-    input[type="text"], input[type="number"] {
-      padding: 6px;
-      margin-bottom: 10px;
-      width: 300px;
+    input[type="file"], input[type="number"] {
+      margin: 10px 0;
+      padding: 8px;
     }
     button {
       padding: 8px 16px;
       cursor: pointer;
+      margin-top: 10px;
     }
     .preview-container {
       display: flex;
@@ -40,22 +40,22 @@
 
   <h2>Redimensionneur d’image (avec aperçu réduit)</h2>
 
-  <label>URL de l’image :</label><br>
-  <input type="text" id="imageUrl" placeholder="https://..."><br>
+  <label>Choisis une image :</label><br>
+  <input type="file" id="imageFile" accept="image/*"><br>
 
   <label>Facteur de multiplication :</label><br>
   <input type="number" id="multiplier" value="10" min="1"><br>
 
-  <button onclick="redimensionner()">Charger et redimensionner</button>
+  <button onclick="redimensionner()">Redimensionner</button>
 
   <div class="preview-container">
     <div class="preview-box">
       <strong>Avant</strong><br>
-      <img id="originalPreview" src="" style="display:none;">
+      <img id="originalPreview" style="display:none;">
     </div>
     <div class="preview-box">
       <strong>Après (aperçu réduit)</strong><br>
-      <img id="resizedPreview" src="" style="display:none;"><br>
+      <img id="resizedPreview" style="display:none;"><br>
       <a id="downloadLink" download="image_redimensionnee.png" style="display:none;">
         <button>Télécharger</button>
       </a>
@@ -64,65 +64,71 @@
 
   <script>
     function redimensionner() {
-      const imageUrl = document.getElementById("imageUrl").value.trim();
+      const fileInput = document.getElementById("imageFile");
       const facteur = parseFloat(document.getElementById("multiplier").value);
       const originalPreview = document.getElementById("originalPreview");
       const resizedPreview = document.getElementById("resizedPreview");
       const downloadLink = document.getElementById("downloadLink");
 
-      if (!imageUrl || isNaN(facteur) || facteur <= 0) {
-        alert("Entre une URL valide et un facteur positif.");
+      if (!fileInput.files[0]) {
+        alert("Choisis une image !");
         return;
       }
 
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = function () {
-        const originalWidth = img.width;
-        const originalHeight = img.height;
-        const newWidth = originalWidth * facteur;
-        const newHeight = originalHeight * facteur;
+      if (isNaN(facteur) || facteur <= 0) {
+        alert("Entre un facteur de multiplication valide.");
+        return;
+      }
 
-        // 🟡 Créer un canvas à taille réelle
-        const canvas = document.createElement("canvas");
-        canvas.width = newWidth;
-        canvas.height = newHeight;
+      const file = fileInput.files[0];
+      const reader = new FileReader();
 
-        const ctx = canvas.getContext("2d");
-        ctx.imageSmoothingEnabled = false;
-        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function () {
+          const originalWidth = img.width;
+          const originalHeight = img.height;
+          const newWidth = originalWidth * facteur;
+          const newHeight = originalHeight * facteur;
 
-        // ✅ Générer image finale pour téléchargement
-        canvas.toBlob(blob => {
-          const url = URL.createObjectURL(blob);
-          downloadLink.href = url;
-          downloadLink.style.display = "inline-block";
-        }, "image/png");
+          // canvas pour image redimensionnée
+          const canvas = document.createElement("canvas");
+          canvas.width = newWidth;
+          canvas.height = newHeight;
+          const ctx = canvas.getContext("2d");
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(img, 0, 0, newWidth, newHeight);
 
-        // 🔍 Créer aperçu réduit
-        const previewCanvas = document.createElement("canvas");
-        const scale = Math.min(300 / newWidth, 300 / newHeight, 1);
-        previewCanvas.width = newWidth * scale;
-        previewCanvas.height = newHeight * scale;
+          // pour téléchargement
+          canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            downloadLink.href = url;
+            downloadLink.style.display = "inline-block";
+          }, "image/png");
 
-        const ctxPreview = previewCanvas.getContext("2d");
-        ctxPreview.imageSmoothingEnabled = false;
-        ctxPreview.drawImage(img, 0, 0, newWidth * scale, newHeight * scale);
+          // aperçu réduit
+          const previewCanvas = document.createElement("canvas");
+          const scale = Math.min(300 / newWidth, 300 / newHeight, 1);
+          previewCanvas.width = newWidth * scale;
+          previewCanvas.height = newHeight * scale;
 
-        // ✅ Afficher les deux
-        originalPreview.src = imageUrl;
-        originalPreview.style.display = "block";
+          const ctxPreview = previewCanvas.getContext("2d");
+          ctxPreview.imageSmoothingEnabled = false;
+          ctxPreview.drawImage(img, 0, 0, newWidth * scale, newHeight * scale);
 
-        resizedPreview.src = previewCanvas.toDataURL("image/png");
-        resizedPreview.style.display = "block";
+          // affichage
+          originalPreview.src = e.target.result;
+          originalPreview.style.display = "block";
+
+          resizedPreview.src = previewCanvas.toDataURL("image/png");
+          resizedPreview.style.display = "block";
+        };
+        img.src = e.target.result;
       };
 
-      img.onerror = function () {
-        alert("Impossible de charger l’image. Vérifie que l’URL est correcte et publique.");
-      };
-
-      img.src = imageUrl;
+      reader.readAsDataURL(file);
     }
   </script>
+
 </body>
 </html>
