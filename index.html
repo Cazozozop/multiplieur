@@ -2,57 +2,60 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Redimensionneur d’image</title>
+  <title>Redimensionneur d’image avec aperçu réduit</title>
   <style>
     body {
       font-family: sans-serif;
-      padding: 20px;
       background: #f0f0f0;
+      padding: 20px;
     }
-    input[type="number"] {
-      width: 60px;
+    input[type="text"], input[type="number"] {
+      padding: 6px;
+      margin-bottom: 10px;
+      width: 300px;
+    }
+    button {
+      padding: 8px 16px;
+      cursor: pointer;
     }
     .preview-container {
       display: flex;
       gap: 40px;
       margin-top: 20px;
-      align-items: flex-start;
+      flex-wrap: wrap;
     }
     .preview-box {
       text-align: center;
     }
     img {
-      display: block;
-      margin: 10px auto;
-      image-rendering: pixelated;
+      max-width: 300px;
+      height: auto;
       border: 1px solid #ccc;
       background: white;
-    }
-    button {
-      margin-top: 10px;
-      padding: 8px 16px;
-      cursor: pointer;
+      image-rendering: pixelated;
     }
   </style>
 </head>
 <body>
-  <h2>Importer une image et multiplier sa taille</h2>
 
-  <input type="file" id="imageInput" accept="image/*"><br><br>
+  <h2>Redimensionneur d’image (avec aperçu réduit)</h2>
 
-  <label for="multiplier">Facteur de multiplication :</label>
-  <input type="number" id="multiplier" value="10" min="1"><br><br>
+  <label>URL de l’image :</label><br>
+  <input type="text" id="imageUrl" placeholder="https://..."><br>
 
-  <button onclick="appliquerMultiplication()">Appliquer</button>
+  <label>Facteur de multiplication :</label><br>
+  <input type="number" id="multiplier" value="10" min="1"><br>
 
-  <div class="preview-container" id="resultat">
+  <button onclick="redimensionner()">Charger et redimensionner</button>
+
+  <div class="preview-container">
     <div class="preview-box">
-      <strong>Avant</strong>
-      <img id="previewOriginal" src="" alt="Image originale" style="display:none;">
+      <strong>Avant</strong><br>
+      <img id="originalPreview" src="" style="display:none;">
     </div>
     <div class="preview-box">
-      <strong>Après</strong>
-      <img id="previewResized" src="" alt="Image redimensionnée" style="display:none;">
+      <strong>Après (aperçu réduit)</strong><br>
+      <img id="resizedPreview" src="" style="display:none;"><br>
       <a id="downloadLink" download="image_redimensionnee.png" style="display:none;">
         <button>Télécharger</button>
       </a>
@@ -60,57 +63,65 @@
   </div>
 
   <script>
-    const input = document.getElementById('imageInput');
-    const originalImg = document.getElementById('previewOriginal');
-    const resizedImg = document.getElementById('previewResized');
-    const downloadLink = document.getElementById('downloadLink');
-    let originalDataURL = '';
-    let originalWidth = 0;
-    let originalHeight = 0;
+    function redimensionner() {
+      const imageUrl = document.getElementById("imageUrl").value.trim();
+      const facteur = parseFloat(document.getElementById("multiplier").value);
+      const originalPreview = document.getElementById("originalPreview");
+      const resizedPreview = document.getElementById("resizedPreview");
+      const downloadLink = document.getElementById("downloadLink");
 
-    input.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
+      if (!imageUrl || isNaN(facteur) || facteur <= 0) {
+        alert("Entre une URL valide et un facteur positif.");
+        return;
+      }
 
-      const reader = new FileReader();
-      reader.onload = function(event) {
-        originalDataURL = event.target.result;
-        originalImg.src = originalDataURL;
-        originalImg.style.display = 'block';
-
-        const tempImg = new Image();
-        tempImg.onload = function() {
-          originalWidth = tempImg.width;
-          originalHeight = tempImg.height;
-          appliquerMultiplication();
-        };
-        tempImg.src = originalDataURL;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    function appliquerMultiplication() {
-      const facteur = parseFloat(document.getElementById('multiplier').value);
-      if (!originalDataURL || facteur <= 0) return;
-
-      const canvas = document.createElement('canvas');
-      canvas.width = originalWidth * facteur;
-      canvas.height = originalHeight * facteur;
-
-      const ctx = canvas.getContext('2d');
       const img = new Image();
-      img.onload = function() {
-        ctx.imageSmoothingEnabled = false; // Garder les pixels nets
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const resizedDataURL = canvas.toDataURL('image/png');
+      img.crossOrigin = "anonymous";
+      img.onload = function () {
+        const originalWidth = img.width;
+        const originalHeight = img.height;
+        const newWidth = originalWidth * facteur;
+        const newHeight = originalHeight * facteur;
 
-        resizedImg.src = resizedDataURL;
-        resizedImg.style.display = 'block';
+        // 🟡 Créer un canvas à taille réelle
+        const canvas = document.createElement("canvas");
+        canvas.width = newWidth;
+        canvas.height = newHeight;
 
-        downloadLink.href = resizedDataURL;
-        downloadLink.style.display = 'inline-block';
+        const ctx = canvas.getContext("2d");
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(img, 0, 0, newWidth, newHeight);
+
+        // ✅ Générer image finale pour téléchargement
+        canvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          downloadLink.href = url;
+          downloadLink.style.display = "inline-block";
+        }, "image/png");
+
+        // 🔍 Créer aperçu réduit
+        const previewCanvas = document.createElement("canvas");
+        const scale = Math.min(300 / newWidth, 300 / newHeight, 1);
+        previewCanvas.width = newWidth * scale;
+        previewCanvas.height = newHeight * scale;
+
+        const ctxPreview = previewCanvas.getContext("2d");
+        ctxPreview.imageSmoothingEnabled = false;
+        ctxPreview.drawImage(img, 0, 0, newWidth * scale, newHeight * scale);
+
+        // ✅ Afficher les deux
+        originalPreview.src = imageUrl;
+        originalPreview.style.display = "block";
+
+        resizedPreview.src = previewCanvas.toDataURL("image/png");
+        resizedPreview.style.display = "block";
       };
-      img.src = originalDataURL;
+
+      img.onerror = function () {
+        alert("Impossible de charger l’image. Vérifie que l’URL est correcte et publique.");
+      };
+
+      img.src = imageUrl;
     }
   </script>
 </body>
