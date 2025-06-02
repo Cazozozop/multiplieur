@@ -41,6 +41,9 @@
   <input type="number" id="multiplier" value="10" min="1"><br>
 
   <button onclick="redimensionner()">Redimensionner</button><br>
+  <a id="downloadLink" href="#" download="image_redimensionnee.png" style="display:none;">
+    <button>Télécharger</button>
+  </a>
 
   <div class="preview-container">
     <div class="preview-box">
@@ -54,11 +57,14 @@
   </div>
 
   <script>
+    let downloadURL = "";
+
     function redimensionner() {
       const fileInput = document.getElementById("imageFile");
       const facteur = parseFloat(document.getElementById("multiplier").value);
       const originalPreview = document.getElementById("originalPreview");
       const resizedPreview = document.getElementById("resizedPreview");
+      const downloadLink = document.getElementById("downloadLink");
 
       if (!fileInput.files[0]) {
         alert("Choisis une image !");
@@ -81,7 +87,6 @@
           const newWidth = originalWidth * facteur;
           const newHeight = originalHeight * facteur;
 
-          // Canvas redimensionné (grande taille pour téléchargement)
           const canvas = document.createElement("canvas");
           canvas.width = newWidth;
           canvas.height = newHeight;
@@ -89,16 +94,12 @@
           ctx.imageSmoothingEnabled = false;
           ctx.drawImage(img, 0, 0, newWidth, newHeight);
 
-          // Lancer téléchargement automatiquement
+          // Mettre à jour le lien de téléchargement
           canvas.toBlob(blob => {
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "image_redimensionnee.png";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            if (downloadURL) URL.revokeObjectURL(downloadURL); // nettoyer ancien blob
+            downloadURL = URL.createObjectURL(blob);
+            downloadLink.href = downloadURL;
+            downloadLink.style.display = "inline-block";
           }, "image/png");
 
           // Afficher les aperçus
