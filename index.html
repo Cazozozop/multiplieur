@@ -6,15 +6,12 @@
   <style>
     body {
       font-family: sans-serif;
-      background: #f9f9f9;
+      background: #f0f0f0;
       padding: 20px;
     }
-    input[type="file"], input[type="number"], button {
+    input, button {
       margin: 10px 0;
       padding: 8px;
-    }
-    button {
-      cursor: pointer;
     }
     .preview-container {
       display: flex;
@@ -27,19 +24,9 @@
     }
     img {
       max-width: 300px;
-      height: auto;
       border: 1px solid #ccc;
       background: white;
       image-rendering: pixelated;
-    }
-    #downloadRealButton {
-      display: none;
-      padding: 10px 20px;
-      background: #2196F3;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-weight: bold;
     }
   </style>
 </head>
@@ -54,10 +41,6 @@
   <input type="number" id="multiplier" value="10" min="1"><br>
 
   <button onclick="redimensionner()">Redimensionner</button><br>
-
-  <a id="downloadLink" download="image_redimensionnee.png">
-    <button id="downloadRealButton">📥 Télécharger l’image redimensionnée</button>
-  </a>
 
   <div class="preview-container">
     <div class="preview-box">
@@ -76,8 +59,6 @@
       const facteur = parseFloat(document.getElementById("multiplier").value);
       const originalPreview = document.getElementById("originalPreview");
       const resizedPreview = document.getElementById("resizedPreview");
-      const downloadLink = document.getElementById("downloadLink");
-      const downloadRealButton = document.getElementById("downloadRealButton");
 
       if (!fileInput.files[0]) {
         alert("Choisis une image !");
@@ -100,6 +81,7 @@
           const newWidth = originalWidth * facteur;
           const newHeight = originalHeight * facteur;
 
+          // Canvas redimensionné (grande taille pour téléchargement)
           const canvas = document.createElement("canvas");
           canvas.width = newWidth;
           canvas.height = newHeight;
@@ -107,12 +89,19 @@
           ctx.imageSmoothingEnabled = false;
           ctx.drawImage(img, 0, 0, newWidth, newHeight);
 
+          // Lancer téléchargement automatiquement
           canvas.toBlob(blob => {
             const url = URL.createObjectURL(blob);
-            downloadLink.href = url;
-            downloadRealButton.style.display = "inline-block";
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "image_redimensionnee.png";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
           }, "image/png");
 
+          // Afficher les aperçus
           const previewCanvas = document.createElement("canvas");
           const scale = Math.min(300 / newWidth, 300 / newHeight, 1);
           previewCanvas.width = newWidth * scale;
