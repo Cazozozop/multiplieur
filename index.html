@@ -2,21 +2,19 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Redimensionneur d’image (import local)</title>
+  <title>Redimensionneur d’image</title>
   <style>
     body {
       font-family: sans-serif;
       background: #f9f9f9;
       padding: 20px;
     }
-    input[type="file"], input[type="number"] {
+    input[type="file"], input[type="number"], button {
       margin: 10px 0;
       padding: 8px;
     }
     button {
-      padding: 8px 16px;
       cursor: pointer;
-      margin-top: 10px;
     }
     .preview-container {
       display: flex;
@@ -34,11 +32,20 @@
       background: white;
       image-rendering: pixelated;
     }
+    #downloadRealButton {
+      display: none;
+      padding: 10px 20px;
+      background: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
 
-  <h2>Redimensionneur d’image (avec aperçu réduit)</h2>
+  <h2>Redimensionneur d’image</h2>
 
   <label>Choisis une image :</label><br>
   <input type="file" id="imageFile" accept="image/*"><br>
@@ -46,7 +53,11 @@
   <label>Facteur de multiplication :</label><br>
   <input type="number" id="multiplier" value="10" min="1"><br>
 
-  <button onclick="redimensionner()">Redimensionner</button>
+  <button onclick="redimensionner()">Redimensionner</button><br>
+
+  <a id="downloadLink" download="image_redimensionnee.png">
+    <button id="downloadRealButton">📥 Télécharger l’image redimensionnée</button>
+  </a>
 
   <div class="preview-container">
     <div class="preview-box">
@@ -55,10 +66,7 @@
     </div>
     <div class="preview-box">
       <strong>Après (aperçu réduit)</strong><br>
-      <img id="resizedPreview" style="display:none;"><br>
-      <a id="downloadLink" download="image_redimensionnee.png" style="display:none;">
-        <button>Télécharger</button>
-      </a>
+      <img id="resizedPreview" style="display:none;">
     </div>
   </div>
 
@@ -69,6 +77,7 @@
       const originalPreview = document.getElementById("originalPreview");
       const resizedPreview = document.getElementById("resizedPreview");
       const downloadLink = document.getElementById("downloadLink");
+      const downloadRealButton = document.getElementById("downloadRealButton");
 
       if (!fileInput.files[0]) {
         alert("Choisis une image !");
@@ -91,7 +100,6 @@
           const newWidth = originalWidth * facteur;
           const newHeight = originalHeight * facteur;
 
-          // canvas pour image redimensionnée
           const canvas = document.createElement("canvas");
           canvas.width = newWidth;
           canvas.height = newHeight;
@@ -99,14 +107,12 @@
           ctx.imageSmoothingEnabled = false;
           ctx.drawImage(img, 0, 0, newWidth, newHeight);
 
-          // pour téléchargement
           canvas.toBlob(blob => {
             const url = URL.createObjectURL(blob);
             downloadLink.href = url;
-            downloadLink.style.display = "inline-block";
+            downloadRealButton.style.display = "inline-block";
           }, "image/png");
 
-          // aperçu réduit
           const previewCanvas = document.createElement("canvas");
           const scale = Math.min(300 / newWidth, 300 / newHeight, 1);
           previewCanvas.width = newWidth * scale;
@@ -116,7 +122,6 @@
           ctxPreview.imageSmoothingEnabled = false;
           ctxPreview.drawImage(img, 0, 0, newWidth * scale, newHeight * scale);
 
-          // affichage
           originalPreview.src = e.target.result;
           originalPreview.style.display = "block";
 
